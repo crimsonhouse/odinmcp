@@ -11,7 +11,7 @@ export async function onRequest(context) {
 
   if (method === "PUT") {
     const testContent = "Hello from R2 at " + new Date().toISOString();
-    await context.env.ODIN_BUCKET.put("test.txt", testContent);
+    await context.env.MCP_EVIDENCE.put("test.txt", testContent);
 
     return new Response(
       JSON.stringify({ ok: true, written: testContent }),
