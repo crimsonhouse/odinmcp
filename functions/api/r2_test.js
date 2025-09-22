@@ -19,7 +19,7 @@ export async function onRequestGet(context) {
 
   if (path.endsWith("/read")) {
     // Try to read "test.txt" from R2
-    const obj = await context.env.ODIN_BUCKET.get("test.txt");
+    const obj = await context.env.MCP_EVIDENCE.get("test.txt");
     if (!obj) {
       return new Response(JSON.stringify({ error: "Object not found" }), {
         status: 404,
@@ -42,7 +42,7 @@ export async function onRequestGet(context) {
 export async function onRequestPut(context) {
   // Write a test object into R2
   const testContent = "Hello from R2 at " + new Date().toISOString();
-  await context.env.ODIN_BUCKET.put("test.txt", testContent);
+  await context.env.MCP_EVIDENCE.put("test.txt", testContent);
 
   return new Response(
     JSON.stringify({ ok: true, written: testContent }),
