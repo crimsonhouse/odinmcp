@@ -1,15 +1,14 @@
-name = "odinmcp"
-compatibility_date = "2024-09-01"
+name = "odin-session-worker"
+main = "session_manager.js"
+compatibility_date = "2025-09-23"
 
-# ✅ Pages needs this
-pages_build_output_dir = "dist"
-
-# ✅ Bind Durable Object + Worker
-[[durable_objects.bindings]]
-name = "SESSION_MANAGER"
+# Define the Durable Object class
+[[durable_objects.classes]]
+name = "SessionManager"
 class_name = "SessionManager"
-script_name = "odin-session-worker"
 
-[[migrations]]
-tag = "v1"
-new_classes = ["SessionManager"]
+# Bind the Durable Object so your Worker can use it
+[durable_objects]
+bindings = [
+  { name = "SESSION_MANAGER", class_name = "SessionManager" }
+]
