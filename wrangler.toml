@@ -1,5 +1,6 @@
 name = "odinmcp"
-compatibility_date = "2024-09-01"
+main = "./functions/api/session/session_manager.js"
+compatibility_date = "2024-09-23"
 
 [[durable_objects.bindings]]
 name = "SESSION_MANAGER"
