@@ -1,19 +1,11 @@
-// File: functions/session/get.js
+export async function onRequestGet(context) {
+  const url = new URL(context.request.url);
 
-export async function onRequestGet({ request, env }) {
-  try {
-    const url = new URL(request.url);
-    const idName = url.searchParams.get("id") || "default";
+  const id = context.env.SESSION_MANAGER.idFromName("default");
+  const obj = context.env.SESSION_MANAGER.get(id);
 
-    // Forward to Durable Object
-    const id = env.SESSION_MANAGER.idFromName(idName);
-    const obj = env.SESSION_MANAGER.get(id);
-
-    return await obj.fetch(request);
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  return await obj.fetch(new Request(url.origin + "/session/get", {
+    method: "GET",
+    headers: context.request.headers
+  }));
 }
