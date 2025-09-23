@@ -1,11 +1,20 @@
+# File: wrangler.toml (place at repo root)
 name = "odinmcp"
-main = "./functions/api/session/session_manager.js"
-compatibility_date = "2024-09-23"
+compatibility_date = "2025-09-23"
+type = "javascript"
 
+# Required by Pages when a wrangler.toml is present:
+pages_build_output_dir = "public"
+
+# Point to the Durable Object source file (exact path)
+main = "./functions/api/session/session_manager.js"
+
+# Durable Object binding that your functions expect (env.SESSION_MANAGER)
 [[durable_objects.bindings]]
 name = "SESSION_MANAGER"
 class_name = "SessionManager"
 
+# Migration entry so Cloudflare registers the class on first deploy
 [[migrations]]
 tag = "v1"
 new_classes = ["SessionManager"]
