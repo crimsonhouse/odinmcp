@@ -1,58 +1,99 @@
-// File: /functions/api/session.js
-// Durable Object: SessionManager
-//
-// Purpose:
-// - Durable Object stores a small session object under key "session".
-// - The Pages function forwards incoming requests to a SessionManager instance.
-// - Endpoints:
-//   POST  /api/session/set   -> body JSON => stored as session
-//   GET   /api/session/get   -> returns {"session": ...}
-
 export class SessionManager {
   constructor(state, env) {
     this.state = state;
     this.env = env;
-    // initialize stored state safely
-    this.state.blockConcurrencyWhile(async () => {
-      const s = await this.state.storage.get("session");
-      this.session = s || null;
-    });
   }
 
-  // handle requests routed to this Durable Object instance
   async fetch(request) {
     const url = new URL(request.url);
-    // Use last path segment: expects /api/session/set or /api/session/get
-    const segments = url.pathname.split("/").filter(Boolean);
-    const last = segments[segments.length - 1] || "";
+    const { pathname, searchParams } = url;
+    const method = request.method.toUpperCase();
 
-    if (request.method === "POST" && last === "set") {
-      const body = await request.json().catch(() => null);
-      if (!body) return new Response(JSON.stringify({ error: "invalid json" }), { status: 400, headers: { "Content-Type": "application/json" }});
-      await this.state.storage.put("session", body);
-      this.session = body;
-      return new Response(JSON.stringify({ ok: true }), { headers: { "Content-Type": "application/json" }});
+    // Durable Object storage
+    const storage = this.state.storage;
+
+    if (method === "POST" && pathname.endsWith("/create")) {
+      // Create new session
+      const sessionId = crypto.randomUUID();
+      const sessionData = {
+        id: sessionId,
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        data: {}
+      };
+
+      await storage.put(sessionId, sessionData);
+      return new Response(JSON.stringify(sessionData), {
+        status: 201,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    if (request.method === "GET" && last === "get") {
-      const stored = await this.state.storage.get("session");
-      return new Response(JSON.stringify({ session: stored }), { headers: { "Content-Type": "application/json" }});
+    if (method === "GET" && pathname.endsWith("/get")) {
+      const sessionId = searchParams.get("id");
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
+      }
+
+      const sessionData = await storage.get(sessionId);
+      if (!sessionData) {
+        return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+      }
+
+      return new Response(JSON.stringify(sessionData), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
-    return new Response("Not found", { status: 404 });
+    if (method === "POST" && pathname.endsWith("/update")) {
+      const sessionId = searchParams.get("id");
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
+      }
+
+      const existing = await storage.get(sessionId);
+      if (!existing) {
+        return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
+      }
+
+      const body = await request.json();
+      existing.data = { ...existing.data, ...body };
+      existing.lastActive = new Date().toISOString();
+      await storage.put(sessionId, existing);
+
+      return new Response(JSON.stringify(existing), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    if (method === "DELETE" && pathname.endsWith("/delete")) {
+      const sessionId = searchParams.get("id");
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: "Missing id" }), { status: 400 });
+      }
+
+      await storage.delete(sessionId);
+      return new Response(JSON.stringify({ deleted: sessionId }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    return new Response(JSON.stringify({ error: "Invalid route or method" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 }
 
-// Pages function entry — forward request to a named Durable Object instance
+// Export Pages Function entry
 export default {
   async fetch(request, env) {
-    // Choose DO instance by query param `id` (optional) or fallback to 'default'
     const url = new URL(request.url);
-    const idName = url.searchParams.get("id") || "default";
-    // IMPORTANT: binding name must match the binding you create later (SESSION_MANAGER)
-    const id = env.SESSION_MANAGER.idFromName(idName);
+    const id = env.SESSION_MANAGER.idFromName("odin-global");
     const obj = env.SESSION_MANAGER.get(id);
-    // Forward the original request to the Durable Object instance
-    return await obj.fetch(request);
+    return obj.fetch(request);
   }
 };
