@@ -1,30 +1,36 @@
 export async function onRequestDelete(context) {
   try {
-    const url = new URL(context.request.url);
+    const { request, env } = context;
+    const url = new URL(request.url);
     const key = url.searchParams.get("key");
 
     if (!key) {
       return new Response(
         JSON.stringify({ error: "Missing 'key' query parameter" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400 }
       );
     }
 
-    // Delete object from R2
-    await context.env.MCP_EVIDENCE.delete(key);
+    // Check if the object exists first
+    const obj = await env.MCP_EVIDENCE.get(key);
+    if (!obj) {
+      return new Response(
+        JSON.stringify({ error: `Object '${key}' not found` }),
+        { status: 404 }
+      );
+    }
+
+    // Delete from bucket
+    await env.MCP_EVIDENCE.delete(key);
 
     return new Response(
-      JSON.stringify({
-        ok: true,
-        deleted: key,
-        deletedAt: new Date().toISOString()
-      }),
+      JSON.stringify({ ok: true, deleted: key }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message || "Delete failed" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: err.message }),
+      { status: 500 }
     );
   }
 }
