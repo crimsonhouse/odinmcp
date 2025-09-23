@@ -1,29 +1,14 @@
-// File: functions/session/set.js
+export async function onRequestPost(context) {
+  const url = new URL(context.request.url);
 
-export async function onRequestPost({ request, env }) {
-  try {
-    const body = await request.json().catch(() => null);
-    if (!body) {
-      return new Response(
-        JSON.stringify({ error: "Invalid JSON body" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
+  // Always use the same DO instance "default"
+  const id = context.env.SESSION_MANAGER.idFromName("default");
+  const obj = context.env.SESSION_MANAGER.get(id);
 
-    // Pick an ID (default or ?id= query string)
-    const url = new URL(request.url);
-    const idName = url.searchParams.get("id") || "default";
-
-    // Forward to Durable Object
-    const id = env.SESSION_MANAGER.idFromName(idName);
-    const obj = env.SESSION_MANAGER.get(id);
-
-    return await obj.fetch(request);
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+  // Forward original request to DO
+  return await obj.fetch(new Request(url.origin + "/session/set", {
+    method: "POST",
+    headers: context.request.headers,
+    body: context.request.body
+  }));
 }
-
