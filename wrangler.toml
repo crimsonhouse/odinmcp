@@ -1,11 +1,10 @@
 name = "odin-session-worker"
-main = "index.js"
-compatibility_date = "2023-12-01"
+main = "session_manager.js"
+compatibility_date = "2025-09-25"
 
-[durable_objects]
-bindings = [
-  { name = "SESSION_MANAGER", class_name = "SessionManager" }
-]
+[[durable_objects.bindings]]
+name = "SESSION_MANAGER"
+class_name = "SessionManager"
 
 [[migrations]]
 tag = "v1"
