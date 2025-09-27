@@ -1,13 +1,36 @@
-name = "odin-session-worker"
-main = "odin-session-worker.js"
+name = "odin-mcp-server"
+main = "src/worker.js"
 compatibility_date = "2025-09-25"
 
-# Durable Object binding
+# Environment bindings
+[env.production]
+name = "odin-mcp-server"
+
+[env.staging]
+name = "odin-mcp-server-staging"
+
+# R2 bucket binding for evidence storage
+[[r2_buckets]]
+binding = "MCP_EVIDENCE"
+bucket_name = "odin-evidence-store"
+
+# Durable Object binding for session management
 [[durable_objects.bindings]]
 name = "SESSION_MANAGER"
 class_name = "SessionManager"
 
-# Tell Wrangler where the Durable Object class lives
+# KV namespace for configuration and caching
+[[kv_namespaces]]
+binding = "ODIN_CONFIG"
+id = "your-kv-namespace-id"
+preview_id = "your-preview-kv-namespace-id"
+
+# Define Durable Object classes
 [[migrations]]
 tag = "v1"
 new_classes = ["SessionManager"]
+
+# Environment variables (set via wrangler secret put)
+[vars]
+APP_VERSION = "0.1.0"
+LOG_LEVEL = "info"
