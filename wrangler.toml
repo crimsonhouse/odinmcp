@@ -1,11 +1,13 @@
 name = "odin-session-worker"
-main = "session_manager.js"
+main = "odin-session-worker.js"
 compatibility_date = "2025-09-25"
 
+# Durable Object binding
 [[durable_objects.bindings]]
 name = "SESSION_MANAGER"
 class_name = "SessionManager"
 
+# Tell Wrangler where the Durable Object class lives
 [[migrations]]
 tag = "v1"
 new_classes = ["SessionManager"]
